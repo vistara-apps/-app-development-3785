@@ -1,27 +1,74 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { Plus, Users, Mail, User } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
+import SkeletonCard from '../components/SkeletonCard';
+import { useToast } from '../hooks/useToast';
 
 const Teams = () => {
   const { teams, addTeam } = useApp();
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState({});
+  const { showSuccess, showError } = useToast();
   const [newTeam, setNewTeam] = useState({
     name: '',
     description: '',
     members: ''
   });
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!newTeam.name.trim()) {
+      newErrors.name = 'Team name is required';
+    } else if (newTeam.name.length < 3) {
+      newErrors.name = 'Team name must be at least 3 characters';
+    }
+    
+    if (newTeam.members) {
+      const emails = newTeam.members.split(',').map(email => email.trim());
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const invalidEmails = emails.filter(email => email && !emailRegex.test(email));
+      
+      if (invalidEmails.length > 0) {
+        newErrors.members = `Invalid email addresses: ${invalidEmails.join(', ')}`;
+      }
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newTeam.name.trim()) return;
     
-    addTeam({
-      ...newTeam,
-      members: newTeam.members.split(',').map(email => email.trim()).filter(email => email)
-    });
+    if (!validateForm()) {
+      showError('Please fix the errors before submitting');
+      return;
+    }
     
-    setNewTeam({ name: '', description: '', members: '' });
-    setShowCreateForm(false);
+    setIsSubmitting(true);
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      addTeam({
+        ...newTeam,
+        members: newTeam.members.split(',').map(email => email.trim()).filter(email => email)
+      });
+      
+      setNewTeam({ name: '', description: '', members: '' });
+      setShowCreateForm(false);
+      setErrors({});
+      showSuccess('Team created successfully!');
+    } catch (error) {
+      showError('Failed to create team. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -55,12 +102,22 @@ const Teams = () => {
                 <label className="form-label">Team Name</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className={`form-input ${errors.name ? 'error' : ''}`}
                   value={newTeam.name}
-                  onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                  onChange={(e) => {
+                    setNewTeam({ ...newTeam, name: e.target.value });
+                    if (errors.name) {
+                      setErrors({ ...errors, name: '' });
+                    }
+                  }}
                   placeholder="Enter team name"
                   required
                 />
+                {errors.name && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {errors.name}
+                  </div>
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label">Description</label>
@@ -75,20 +132,46 @@ const Teams = () => {
                 <label className="form-label">Team Members (Email addresses, comma-separated)</label>
                 <input
                   type="text"
-                  className="form-input"
+                  className={`form-input ${errors.members ? 'error' : ''}`}
                   value={newTeam.members}
-                  onChange={(e) => setNewTeam({ ...newTeam, members: e.target.value })}
+                  onChange={(e) => {
+                    setNewTeam({ ...newTeam, members: e.target.value });
+                    if (errors.members) {
+                      setErrors({ ...errors, members: '' });
+                    }
+                  }}
                   placeholder="john@example.com, jane@example.com"
                 />
+                {errors.members && (
+                  <div style={{ color: '#ef4444', fontSize: '12px', marginTop: '4px' }}>
+                    {errors.members}
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '16px' }}>
-                <button type="submit" className="btn btn-primary">
-                  Create Team
+                <button 
+                  type="submit" 
+                  className="btn btn-primary"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <LoadingSpinner size="small" color="white" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create Team'
+                  )}
                 </button>
                 <button
                   type="button"
-                  onClick={() => setShowCreateForm(false)}
+                  onClick={() => {
+                    setShowCreateForm(false);
+                    setErrors({});
+                    setNewTeam({ name: '', description: '', members: '' });
+                  }}
                   className="btn btn-secondary"
+                  disabled={isSubmitting}
                 >
                   Cancel
                 </button>
@@ -98,8 +181,17 @@ const Teams = () => {
         )}
 
         <div className="grid grid-2">
-          {teams.map((team) => (
-            <div key={team.id} className="card">
+          {isLoading ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <SkeletonCard key={index} showAvatar={true} lines={3} />
+            ))
+          ) : (
+            teams.map((team, index) => (
+              <div 
+                key={team.id} 
+                className="card animate-fadeIn"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                 <div style={{
                   width: '40px',
@@ -155,8 +247,9 @@ const Teams = () => {
                   Join Team
                 </button>
               </div>
-            </div>
-          ))}
+              </div>
+            ))
+          )}
         </div>
 
         {teams.length === 0 && (
