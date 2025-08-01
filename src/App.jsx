@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AppProvider } from './context/AppContext';
 import Header from './components/Header';
+import { ToastContainer } from './components/Toast';
+import { useToast } from './hooks/useToast';
 import LandingPage from './pages/LandingPage';
 import Dashboard from './pages/Dashboard';
 import Teams from './pages/Teams';
@@ -12,6 +14,7 @@ import Subscription from './pages/Subscription';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const { toasts, removeToast } = useToast();
   
   return (
     <AppProvider>
@@ -52,6 +55,7 @@ function App() {
               element={isAuthenticated ? <Subscription /> : <Navigate to="/" replace />} 
             />
           </Routes>
+          <ToastContainer toasts={toasts} removeToast={removeToast} />
         </div>
       </Router>
     </AppProvider>

@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { ConnectButton } from '@rainbow-me/rainbowkit';
 import { Users, Lightbulb, Rocket, User, CreditCard, BarChart3 } from 'lucide-react';
+import MobileNav from './MobileNav';
 
 const Header = ({ isAuthenticated, setIsAuthenticated }) => {
   const location = useLocation();
@@ -39,8 +40,9 @@ const Header = ({ isAuthenticated, setIsAuthenticated }) => {
             Hackathon Hub
           </Link>
           
+          {/* Desktop Navigation */}
           {isAuthenticated && (
-            <nav style={{ display: 'flex', gap: '24px' }}>
+            <nav className="hidden md:flex" style={{ display: 'flex', gap: '24px' }}>
               {navigationItems.map((item) => {
                 const Icon = item.icon;
                 return (
@@ -57,8 +59,10 @@ const Header = ({ isAuthenticated, setIsAuthenticated }) => {
                       color: location.pathname === item.path ? '#3b82f6' : '#64748b',
                       backgroundColor: location.pathname === item.path ? '#eff6ff' : 'transparent',
                       fontWeight: location.pathname === item.path ? '600' : '400',
-                      fontSize: '14px'
+                      fontSize: '14px',
+                      transition: 'all 0.2s ease'
                     }}
+                    className="hover:bg-gray-50"
                   >
                     <Icon size={16} />
                     {item.label}
@@ -70,23 +74,32 @@ const Header = ({ isAuthenticated, setIsAuthenticated }) => {
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <ConnectButton />
-          {!isAuthenticated && (
-            <button
-              onClick={() => setIsAuthenticated(true)}
-              className="btn btn-primary"
-            >
-              Sign In
-            </button>
-          )}
-          {isAuthenticated && (
-            <button
-              onClick={() => setIsAuthenticated(false)}
-              className="btn btn-outline"
-            >
-              Sign Out
-            </button>
-          )}
+          {/* Desktop Auth Buttons */}
+          <div className="hidden md:flex" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <ConnectButton />
+            {!isAuthenticated && (
+              <button
+                onClick={() => setIsAuthenticated(true)}
+                className="btn btn-primary"
+              >
+                Sign In
+              </button>
+            )}
+            {isAuthenticated && (
+              <button
+                onClick={() => setIsAuthenticated(false)}
+                className="btn btn-outline"
+              >
+                Sign Out
+              </button>
+            )}
+          </div>
+          
+          {/* Mobile Navigation */}
+          <MobileNav 
+            isAuthenticated={isAuthenticated} 
+            setIsAuthenticated={setIsAuthenticated} 
+          />
         </div>
       </div>
     </header>
